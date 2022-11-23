@@ -91,9 +91,6 @@ def compute_people_indicators():
 def hello():
     return f"<b>Flaskapi</b> | {os.getcwd()} | {datetime.datetime.now().strftime('%d/%m/%Y @ %Hh%Mm%Ss')}!!"
 
-@app.route('/api/params')
-def params():
-    return jsonify(gui_params) 
 
 @app.route('/api/client')
 def client():
@@ -105,6 +102,7 @@ def client():
     x_client = test_df_nonan.sample(1).to_dict(orient='records')[0]
     # risk = np.random.uniform(0., 1.)
     return jsonify(x_client)
+
 
 def my_isna(s):
     if s in ['N/A', 'NaN', '']:
@@ -120,6 +118,7 @@ def transform_input_nan_vals(x_client):
         else:
             x_client_w_nan[key] = x_client[key]
     return x_client_w_nan
+
 
 @app.route('/api/prediction') #, methods=['GET']
 def predict():
@@ -166,25 +165,6 @@ def predict():
 @app.route("/dashboard")
 def dashboard():
     return render_template('dashboard.html')
-
-@app.route('/api/news')
-def get_news():
-    response = requests.get(NEWS_API_URL)
-    content = json.loads(response.content.decode('utf-8'))
-    if response.status_code != 200:
-        return jsonify({
-            'status': 'error',
-            'message': 'La requête à l\'API des articles d\'actualité n\'a pas fonctionné. Voici le message renvoyé par l\'API : {}'.format(content['message'])
-        }), 500
-
-    keywords, articles = extract_keywords(content["articles"])
-    return jsonify({
-        'status'   : 'ok',
-        'data'     :{
-            'keywords' : keywords[:100], # On retourne uniquement les 100 premiers mots
-            'articles' : articles
-        }
-    })
 
 
 if __name__ == "__main__":
