@@ -26,7 +26,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 DATEORIGIN = datetime.datetime(2018,5,17) # Date de la compétition Kaggle
 N_CRIT = 10
-N_CAT_MAX = 15
+N_CAT_MAX = 10
 
 def get_categ_val(feat):
     """Récupère la valeur de la catégorie dans un nom de feature.
@@ -71,15 +71,6 @@ def get_categ_val(feat):
         # print(f"categ_val 4 = {categ_val}")
     # print(f"categ, categ_val = {categ, categ_val}")
     return categ, categ_val
-
-# # @st.cache
-# def get_gui_params():
-#     # Récupération des données d'affichage
-#     res = re.get(f"http://192.168.1.71:5000/api/params/")
-#     json_str = json.dumps(res.json())
-#     gui_params = json.loads(json_str)
-#     st.write(gui_params['NAME_FAMILY_STATUS'])
-#     return gui_params
 
 
 def append_dict_list(dico, key, val):
@@ -201,7 +192,6 @@ def update_x_test(x_test, info_gui, num_vars, categ_vars, mapping):
 
 
 def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, client_approved):
-    n_crit = 10
     df_crit = pd.DataFrame({"Critère": criteria_names,
                             "Importance": client_shap_values})
     if client_approved:
@@ -218,7 +208,7 @@ def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, cli
     plt.rcParams['ytick.labelsize'] = 12
     fig = plt.figure();
     df_crit = df_crit.sort_values(by="Importance abs", ascending=False)#.plot(kind='barh', grid=False, rot=0)
-    df_crit_n = df_crit.iloc[:n_crit]
+    df_crit_n = df_crit.iloc[:N_CRIT]
     most_impt_crit_names = df_crit_n['Critère'].values
 
     colors = ['yellowgreen' if val > 0. else 'red' for val in df_crit_n['Importance'].values]
