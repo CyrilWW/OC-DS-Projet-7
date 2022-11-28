@@ -24,8 +24,11 @@ from sklearn.preprocessing import MinMaxScaler
 #     page_icon="./loan.png"
 # )
 
+PREDICTION_API_URL = "http://localhost:5000"
+# PREDICTION_API_URL = "http://192.168.1.71:5000"
+
 DATEORIGIN = datetime.datetime(2018,5,17) # Date de la compétition Kaggle
-N_CRIT = 10
+N_CRIT = 15
 N_CAT_MAX = 10
 
 def get_categ_val(feat):
@@ -80,11 +83,13 @@ def append_dict_list(dico, key, val):
     dico[key].append(val)
     return dico
 
+
 def update_double_dict(dico, key1, key2, val):
     if key1 not in dico:
         dico[key1] = {}
     dico[key1][key2] = val
     return dico
+
 
 def interpret_input_df_client_vars(x_client):
     num_vars = {}
@@ -155,6 +160,8 @@ def decode_x_test(x_test, num_vars, categ_vars, mapping):
             if x_test[orig_col]:
                 ind = cat_val_list.index(categ_val)
                 x_gui[categ] = ind
+            else:
+                x_gui[categ] = 0
     return x_gui
 
 
@@ -188,18 +195,57 @@ def update_x_test(x_test, info_gui, num_vars, categ_vars, mapping):
             x_test[col] = 1
         else: # Ah, pas d'association possible
             pass
+    # Variables feat.eng. du modèle
+    x_test['DAYS_EMPLOYED_PERC'] = x_test['DAYS_EMPLOYED'] / x_test['DAYS_BIRTH']
+    x_test['INCOME_CREDIT_PERC'] = x_test['AMT_INCOME_TOTAL'] / x_test['AMT_CREDIT']
+    x_test['INCOME_PER_PERSON'] = x_test['AMT_INCOME_TOTAL'] / x_test['CNT_FAM_MEMBERS_NR']
+    x_test['ANNUITY_INCOME_PERC'] = x_test['AMT_ANNUITY'] / x_test['AMT_INCOME_TOTAL']
+    x_test['PAYMENT_RATE'] = x_test['AMT_ANNUITY'] / x_test['AMT_CREDIT']
+
     return x_test
 
 
-def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, client_approved):
-    df_crit = pd.DataFrame({"Critère": criteria_names,
-                            "Importance": client_shap_values})
+def build_client_shap_values_agg(feature_names, client_shap_values, num_vars, categ_vars, mapping):
+    client_shap_values_dict = {col: val for col, val in zip(feature_names, client_shap_values)}
+    client_shap_values_agg = {}
+    for feat in client_shap_values_dict:
+        if feat in num_vars: # variable numérique
+            client_shap_values_agg[feat] = client_shap_values_dict[feat]
+        else : # variable catégorielle
+            # Recherche de la variable catégorielle à l'origine de la variable courante 
+            root_name, categ_val = search_keys_in_multidict_for_val(mapping, feat)
+            if root_name is None:
+                st.write(f"⚠ Problème dans la construction de client_shap_values_agg pour la variable {feat}")
+                continue
+            all_categ_cols = categ_vars[root_name]
+            if root_name not in client_shap_values_agg:
+                client_shap_values_agg[root_name] = 0.
+            for col in all_categ_cols:
+                client_shap_values_agg[root_name] += np.abs(client_shap_values_dict[mapping[root_name][col]])
+
+    return client_shap_values_agg, client_shap_values_dict
+
+
+def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, client_approved, num_vars, categ_vars, mapping, x_gui):
+    most_impt_crit_names = [] # TODO faire le dico et l'agglo des shap dès le début
+    ###
+    client_shap_values_agg, client_shap_values_dict = build_client_shap_values_agg(criteria_names, client_shap_values, num_vars, categ_vars, mapping)
+    ###
+    criteria_names_agg = list(client_shap_values_agg.keys())
+    shap_values_agg = list(client_shap_values_agg.values())
+    df_crit = pd.DataFrame({"Critère": criteria_names_agg,
+                            "Importance": shap_values_agg})
     if client_approved:
-        df_crit['Importance'] = - df_crit['Importance']*100. # On inverse les signe car les shap values + poussent le risque à 1 donc la décision à 0, et vice-versa
+        df_crit['Importance'] = df_crit['Importance'] # On inverse les signe car les shap values + poussent le risque vers 1 donc la décision à 0, et vice-versa
     else:
-        df_crit['Importance'] = df_crit['Importance']*100. # On les les signes car les shap values + poussent le risque à 1 donc la décision à 0, et vice-versa
+        df_crit['Importance'] = - df_crit['Importance'] # On les les signes car les shap values + poussent le risque à 1 donc la décision à 0, et vice-versa
     
-    df_crit['Importance abs'] = np.abs(client_shap_values)
+    df_crit['Importance abs'] = df_crit['Importance'].abs()
+    
+    # Traduction en pourcentages
+    sum = df_crit['Importance abs'].sum()
+    df_crit['Importance'] = df_crit['Importance'] / sum * 100.
+    df_crit['Importance abs'] = df_crit['Importance abs'] / sum * 100.
 
     plt.rcParams['figure.figsize'] = [6, 6]
     plt.rcParams['axes.titlesize'] = 16
@@ -208,13 +254,14 @@ def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, cli
     plt.rcParams['ytick.labelsize'] = 12
     fig = plt.figure();
     df_crit = df_crit.sort_values(by="Importance abs", ascending=False)#.plot(kind='barh', grid=False, rot=0)
-    df_crit_n = df_crit.iloc[:N_CRIT]
+    df_crit_n = df_crit.iloc[:n_crit]
     most_impt_crit_names = df_crit_n['Critère'].values
 
     colors = ['yellowgreen' if val > 0. else 'red' for val in df_crit_n['Importance'].values]
     sns.barplot(data=df_crit_n, x="Importance", y="Critère", palette=colors)
     plt.title('Importance des critères de décision')
     plt.xlabel("Importance (%)")
+    st.write(f"most_impt_crit_names = {most_impt_crit_names}")
     return fig, most_impt_crit_names
 
 
@@ -278,12 +325,31 @@ def make_num_client_positioning(crit_names, crit_means, x_client):
     df2 = pd.DataFrame.from_records([x_client2])
     df = pd.concat((df1, df2), ignore_index=True)
     df = df.astype(float)
-    df_sc = pd.DataFrame(MinMaxScaler().fit_transform(df), columns=df.columns)
+    df_sc = pd.DataFrame(MinMaxScaler(feature_range=(0.05, 1)).fit_transform(df), columns=df.columns)
     for col in df_sc.columns: df_sc[col] = df_sc[col] * 100.
     df_sc['Who'] = ['Population', 'Client']
     # st.write(df)
     fig = make_radar_chart(df_sc, cols=crit_names2, label_col='Who')
     return fig
+
+
+def get_whole_categ_cols(categ_vars, mapping, x_gui, crit_name=None, root_name=None):
+    # Init
+    all_categ_cols = None
+    all_categ_vals = None
+    client_type = None
+    # Recherche de la variable catégorielle à l'origine de la variable courante 
+    if crit_name is None and root_name is None:
+        st.write(f"❌ crit_name et root_name ne peuvent pas être {None} en même temps")
+        return root_name, all_categ_cols, all_categ_vals, client_type
+    if crit_name is not None:
+        root_name, categ_val = search_keys_in_multidict_for_val(mapping, crit_name)
+    if root_name not in categ_vars:
+        return root_name, all_categ_cols, all_categ_vals, client_type
+    client_type = categ_vars[root_name][x_gui[root_name]] # categ_val
+    all_categ_vals = categ_vars[root_name]
+    all_categ_cols = [mapping[root_name][val] for val in all_categ_vals]
+    return root_name, all_categ_cols, all_categ_vals, client_type
 
 
 def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapping, x_gui, client_approved=False):
@@ -306,34 +372,21 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
     ind = 0
     # st.write(f"crit_names = {crit_names}")
     for crit in crit_names:
-
-        root_name, categ_val = search_keys_in_multidict_for_val(mapping, crit)
-        if root_name not in categ_vars:
-            st.write(f"⚠ Critère {root_name} absente de categ_vars !")
-            continue
+        st.write(f"crit = {crit}")
+        root_name, all_categ_cols, all_categ_vals, client_type = get_whole_categ_cols(categ_vars, mapping, x_gui, root_name=crit) # Nouvelle politique d'affichage
         if root_name is None:
-            st.write(f"⚠ Critère {root_name} absente de mapping !")
+            st.write(f"⚠ Critère {root_name} absent des infos disponibles !")
             continue
-        # if categ_val is None:
-        #     st.write(f"⚠ Valeur catégorielle {categ_val} absente de mapping !")
-        #     continue
 
-        # On ne refait pas les tracés pour la variable catégorielle
+        # On ne refait pas les tracés pour la variable catégorielle si elle a déjà été traitée
         if root_name in treated_root_names:
             continue
 
-        # On ne refait pas les tracés pour la variable catégorielle
-        treated_root_names.append(root_name)
-
-        client_type = categ_vars[root_name][x_gui[root_name]] # categ_val
-
-        all_categ_vals = categ_vars[root_name]
-        all_categ_cols = [mapping[root_name][val] for val in all_categ_vals]
-        
+        # Récupération des infos disponibles dans les importances 
         available_cols = [col for col in all_categ_cols if col in df_approved_cat_rates.columns]
-        if len(available_cols)==0:
-            # st.write(f"⚠ Pas d'information disponible pour {all_categ_cols} dans les indicateurs de la population !")
+        if len(available_cols) == 0:
             continue
+
         values = df_approved_cat_rates[available_cols].values[0, :]
         df_cat = pd.DataFrame({crit: all_categ_vals,
                                'PERC_APPROVED': values})
@@ -369,12 +422,14 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
         # ind += 1
         figs.append(fig)
 
+        # On mémorise que la variable catégorielle a été traitée
+        treated_root_names.append(root_name)
     return figs
 
 # @st.cache
 def get_client_info():
     # Récupération des infos d'un client random
-    res = re.get(f"http://192.168.1.71:5000/api/client")
+    res = re.get(f"{PREDICTION_API_URL}/api/client")
     if res.status_code != 200:
         st.write("❌ Erreur de communication des infos clients.")
         return
@@ -413,6 +468,7 @@ def get_ihm_info():
     info_gui['NAME_EDUCATION_TYPE'] = container.selectbox("Niveau d'études :", categ_vars['NAME_EDUCATION_TYPE'], index=x_gui['NAME_EDUCATION_TYPE'])
     info_gui['AMT_INCOME_TOTAL'] = container.slider("Revenus annuels :", min_value=0., max_value=x_gui['AMT_INCOME_TOTAL']*3, step=1000., value=x_gui['AMT_INCOME_TOTAL'])
     info_gui['NAME_INCOME_TYPE'] = container.selectbox("Type d'emploi :", categ_vars['NAME_INCOME_TYPE'], index=x_gui['NAME_INCOME_TYPE'])
+    info_gui['OCCUPATION_TYPE'] = container.selectbox("Poste :", categ_vars['OCCUPATION_TYPE'], index=x_gui['OCCUPATION_TYPE'])
     info_gui['DAYS_EMPLOYED'] = container.date_input("Date de prise d'emploi :", value=x_gui['DAYS_EMPLOYED'])
     info_gui['ORGANIZATION_TYPE'] = container.selectbox("Domaine professionnel :", categ_vars['ORGANIZATION_TYPE'], index=x_gui['ORGANIZATION_TYPE'])
     info_gui['FLAG_OWN_REALTY_NR'] = container.radio("Propriétaire foncier :", ('Non', 'Oui'), index=x_gui['FLAG_OWN_REALTY_NR'])
@@ -441,10 +497,9 @@ def launch_prediction():
     # Encodage des infos IHM
     x_client = st.session_state.x_client
     values = {'x_client': x_client}
+    # st.write(values)
 
-    # res = re.post(f"http://192.168.1.71:5000/api/prediction", json=values)
-    res = re.get(f"http://192.168.1.71:5000/api/prediction", json=values) # , verify=False
-    # res = re.get(f"http://192.168.1.71:5000/api/prediction")
+    res = re.get(f"{PREDICTION_API_URL}/api/prediction", json=values) # , verify=False
     if res.status_code != 200:
         st.write("❌ Erreur de communication de la prédiction.")
         return
@@ -482,17 +537,20 @@ def launch_prediction():
 
         # Eléments de décision
         st.subheader("Eléments de décision")
-        fig, most_impt_crit_names = make_decision_criteria_graph(N_CRIT, client_shap_values, criteria_names, client_approved)
+        fig, most_impt_crit_names = make_decision_criteria_graph(N_CRIT, client_shap_values, criteria_names, client_approved,
+                                                                 st.session_state.num_vars, st.session_state.categ_vars,
+                                                                 st.session_state.mapping, st.session_state.x_gui)
         st.pyplot(fig)
+        st.write(f"most_impt_crit_names = {most_impt_crit_names}")
         st.markdown("""---""")
 
         # Positionnement du client, variables numériques
         st.subheader("Positionnement du client")
         st.markdown("**Critères numériques**")
-        # st.image('./radarplot.png', width=600)
         most_impt_num_crit_names = [crit for crit in most_impt_crit_names if crit in st.session_state.num_vars]
         fig = make_num_client_positioning(most_impt_num_crit_names, crit_means, x_client)
-        if fig is None:
+        if fig is None or len(most_impt_num_crit_names)<3:
+            st.write(f"most_impt_num_crit_names = {most_impt_num_crit_names}")
             st.write("⚠ Pas assez de critères numériques dans la décision.")
         else:
             st.pyplot(fig)
@@ -518,7 +576,7 @@ def launch_prediction():
 if not 'prediction' in st.session_state:
     st.title("Prêt à dépenser - tableau de bord")
     st.markdown("""---""")
-    st.write("Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.")
+    st.write("Application web prédisant le risque de défaut de paiement d'un client. L'application utilise un modèle de Machine Learning, servi par une API.")
     # st.write("""
     # ## About
     # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
@@ -544,4 +602,5 @@ st.sidebar.button("Nouveau client", on_click=get_client_info)
 
 get_ihm_info()
 
-st.sidebar.button("Décision", on_click=launch_prediction)
+if 'info_gui' in st.session_state:
+    st.sidebar.button("Décision", on_click=launch_prediction)
