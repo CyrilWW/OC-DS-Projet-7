@@ -8,10 +8,7 @@ import pickle
 import os
 import pandas as pd
 
-
-print(f"CWD = {os.getcwd()}")
-
-
+# print(f"CWD = {os.getcwd()}")
 
 def build_categ_vals(df, root_var_name):
     """Construit la liste de valeurs de la catégorie dans les noms de feature, à partir de la racine.
@@ -82,7 +79,7 @@ def compute_people_indicators():
             else:
                 rate = suf_df['APPROVED'].sum() / suf_df.shape[0]
                 approved_cat_rates[col] = np.float64(rate)
-    print(f"approved_cat_rates = {approved_cat_rates}")
+    # print(f"approved_cat_rates = {approved_cat_rates}")
     return people_means, approved_cat_rates
 
 
@@ -94,13 +91,11 @@ def hello():
 
 @app.route('/api/client')
 def client():
-    # threshold = np.random.uniform(0.5, 1.0)
     if not 'threshold' in model_params:
         return f"<b>ERROR</b> | No 'threshold' in model prameters!!"
 
     # On choisit un client au hasard dans test_df
     x_client = test_df_nonan.sample(1).to_dict(orient='records')[0]
-    # risk = np.random.uniform(0., 1.)
     return jsonify(x_client)
 
 
@@ -147,7 +142,7 @@ def predict():
     data = {
         'decision': {
             'risk': risk,
-            'risk_threshold': 1. - threshold
+            'risk_threshold': threshold
         },
         'decision_criteria': {
             'client_shap_values': client_shap_values,
