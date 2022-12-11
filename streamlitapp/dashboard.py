@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
 from pathlib import Path
-
+import os
 from sklearn.preprocessing import MinMaxScaler
 
 # Développer un dashboard interactif permettant :
@@ -35,6 +35,7 @@ N_CRIT = 15
 N_CAT_MAX = 10
 
 IMG_PATH = Path(__file__).parent
+print(IMG_PATH)
 
 def get_categ_val(feat):
     """Récupère la valeur de la catégorie dans un nom de feature.
@@ -518,11 +519,11 @@ def launch_prediction():
     approved_cat_rates = resp['people_indicators']['approved_cat_rates']
     if risk > risk_threshold:
         client_approved = False
-        icon_decision = IMG_PATH+'/no.jpg'
+        icon_decision = Image.open(os.path.join(IMG_PATH, 'no.jpg'))
         str_decision = "Prêt refusé"
     else:
         client_approved = True
-        icon_decision = IMG_PATH+'/yes.jpg'
+        icon_decision = Image.open(os.path.join(IMG_PATH, 'yes.jpg'))
         str_decision = "Prêt accordé"
 
 
@@ -586,7 +587,7 @@ if not 'prediction' in st.session_state:
     # ## About
     # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
     # """)
-    header_img = Image.open(IMG_PATH+"/header.png")
+    header_img = Image.open(os.path.join(IMG_PATH, "header.png"))
     st.image(header_img, caption=' ')
     st.markdown("""---""")
 
@@ -600,7 +601,8 @@ if not 'prediction' in st.session_state:
 st.sidebar.title("Informations client")
 st.session_state.client_container = st.sidebar
 
-st.sidebar.image(IMG_PATH+"/client.png", width=100)
+client_img = Image.open(os.path.join(IMG_PATH, "client.png"))
+st.sidebar.image(client_img, width=100)
 
 st.sidebar.button("Nouveau client", on_click=get_client_info)
 # new_client = st.sidebar.checkbox("Récup client en base")
