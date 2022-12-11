@@ -261,7 +261,7 @@ def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, cli
     sns.barplot(data=df_crit_n, x="Importance", y="Critère", palette=colors)
     plt.title('Importance des critères de décision')
     plt.xlabel("Importance (%)")
-    st.write(f"most_impt_crit_names = {most_impt_crit_names}")
+    # st.write(f"most_impt_crit_names = {most_impt_crit_names}")
     return fig, most_impt_crit_names
 
 
@@ -372,7 +372,7 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
     ind = 0
     # st.write(f"crit_names = {crit_names}")
     for crit in crit_names:
-        st.write(f"crit = {crit}")
+        # st.write(f"crit = {crit}")
         root_name, all_categ_cols, all_categ_vals, client_type = get_whole_categ_cols(categ_vars, mapping, x_gui, root_name=crit) # Nouvelle politique d'affichage
         if root_name is None:
             st.write(f"⚠ Critère {root_name} absent des infos disponibles !")
@@ -541,7 +541,7 @@ def launch_prediction():
                                                                  st.session_state.num_vars, st.session_state.categ_vars,
                                                                  st.session_state.mapping, st.session_state.x_gui)
         st.pyplot(fig)
-        st.write(f"most_impt_crit_names = {most_impt_crit_names}")
+        # st.write(f"most_impt_crit_names = {most_impt_crit_names}")
         st.markdown("""---""")
 
         # Positionnement du client, variables numériques
@@ -550,7 +550,7 @@ def launch_prediction():
         most_impt_num_crit_names = [crit for crit in most_impt_crit_names if crit in st.session_state.num_vars]
         fig = make_num_client_positioning(most_impt_num_crit_names, crit_means, x_client)
         if fig is None or len(most_impt_num_crit_names)<3:
-            st.write(f"most_impt_num_crit_names = {most_impt_num_crit_names}")
+            # st.write(f"most_impt_num_crit_names = {most_impt_num_crit_names}")
             st.write("⚠ Pas assez de critères numériques dans la décision.")
         else:
             st.pyplot(fig)
@@ -581,7 +581,7 @@ if not 'prediction' in st.session_state:
     # ## About
     # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
     # """)
-    st.image("header.png")
+    st.image("./header.png")
     st.markdown("""---""")
 
 
@@ -594,7 +594,7 @@ if not 'prediction' in st.session_state:
 st.sidebar.title("Informations client")
 st.session_state.client_container = st.sidebar
 
-st.sidebar.image("client.png", width=100)
+st.sidebar.image("./client.png", width=100)
 
 st.sidebar.button("Nouveau client", on_click=get_client_info)
 # new_client = st.sidebar.checkbox("Récup client en base")
