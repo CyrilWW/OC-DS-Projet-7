@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from PIL import Image
+
 from sklearn.preprocessing import MinMaxScaler
 
 # Développer un dashboard interactif permettant :
@@ -581,7 +583,8 @@ if not 'prediction' in st.session_state:
     # ## About
     # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
     # """)
-    st.image("./header.png")
+    header_img = Image.open("./header.png")
+    st.image(header_img, caption=' ')
     st.markdown("""---""")
 
 
