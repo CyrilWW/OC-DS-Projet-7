@@ -581,7 +581,7 @@ if not 'prediction' in st.session_state:
     # ## About
     # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
     # """)
-    st.image("header.png")
+    st.image("./header.png")
     st.markdown("""---""")
 
 
@@ -594,7 +594,7 @@ if not 'prediction' in st.session_state:
 st.sidebar.title("Informations client")
 st.session_state.client_container = st.sidebar
 
-st.sidebar.image("client.png", width=100)
+st.sidebar.image("./client.png", width=100)
 
 st.sidebar.button("Nouveau client", on_click=get_client_info)
 # new_client = st.sidebar.checkbox("Récup client en base")
