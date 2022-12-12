@@ -294,13 +294,14 @@ def make_radar_chart(df, cols=None, label_col=None, title='', title_y=1.05):
     plt.rcParams['ytick.labelsize'] = 12
     variables, values, labels = build_radar_data(df, cols=cols, label_col=label_col)
     n_vars = len(list(values.values())[0])
-    label_loc = np.linspace(start=0, stop=2 * np.pi, num=n_vars)
-    
+    label_loc = np.linspace(start=0, stop=2*np.pi, num=n_vars)
+
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='polar')
     for key, label in zip(values.keys(), labels):
         ax.plot(label_loc, values[key], label=label)
     plt.title(title, y=title_y)
+    label_loc = label_loc[:-1]
     lines, labs = plt.thetagrids(np.degrees(label_loc), labels=variables)
     plt.legend()
     return fig
