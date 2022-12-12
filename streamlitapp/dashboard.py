@@ -27,8 +27,10 @@ from sklearn.preprocessing import MinMaxScaler
 #     page_icon="./loan.png"
 # )
 
-PREDICTION_API_URL = "http://localhost:5000"
+# PREDICTION_API_URL = "http://localhost:5000"
 # PREDICTION_API_URL = "http://192.168.1.71:5000"
+# PREDICTION_API_URL = "http://192.168.1.71:5000"
+PREDICTION_API_URL = "http://92.94.205.51:5000"
 
 DATEORIGIN = datetime.datetime(2018,5,17) # Date de la compétition Kaggle
 N_CRIT = 15
