@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from flask import Flask, render_template, jsonify, request
-import json
-import requests
 import datetime
 import pickle
 import os
 import pandas as pd
-
-# print(f"CWD = {os.getcwd()}")
 
 def build_categ_vals(df, root_var_name):
     """Construit la liste de valeurs de la catégorie dans les noms de feature, à partir de la racine.
@@ -79,7 +75,6 @@ def compute_people_indicators():
             else:
                 rate = suf_df['APPROVED'].sum() / suf_df.shape[0]
                 approved_cat_rates[col] = np.float64(rate)
-    # print(f"approved_cat_rates = {approved_cat_rates}")
     return people_means, approved_cat_rates
 
 
@@ -164,4 +159,4 @@ def dashboard():
 
 if __name__ == "__main__":
     people_means, approved_cat_rates = compute_people_indicators()
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=False)

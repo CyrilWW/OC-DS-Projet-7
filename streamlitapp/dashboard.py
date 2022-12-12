@@ -11,11 +11,11 @@ from pathlib import Path
 import os
 from sklearn.preprocessing import MinMaxScaler
 
-# Développer un dashboard interactif permettant :
+# Dashboard interactif permettant :
 #  - aux chargés de relation client d'expliquer de façon la plus transparente possible les décisions d’octroi de crédit 
 #  - à leurs clients de disposer de leurs informations personnelles et de les explorer facilement.
 
-# Celui-ci devra contenir au minimum les fonctionnalités suivantes :
+# Celui-ci contient les fonctionnalités suivantes :
 #  - Permettre de visualiser le score et l’interprétation de ce score pour chaque client de façon intelligible pour 
 #    une personne non experte en data science.
 #  - Permettre de visualiser des informations descriptives relatives à un client (via un système de filtre).
@@ -62,23 +62,15 @@ def get_categ_val(feat):
     
     categ = ''
     categ_val = feat
-    # st.write(f"categ_val = {categ_val}")
-    # print(f" = {}")
     if sep1 in categ_val:
         categ_val = categ_val.split(sep1)[1]
-        # print(f"categ_val 1 = {categ_val}")
     if sep2 in categ_val:
         categ = categ_val.split(sep2)[0]
         categ_val = categ_val.split(sep2)[1]
-        # print(f"categ 2 = {categ}")
-        # print(f"categ_val 2 = {categ_val}")
     if sep3 in categ_val:
         categ_val = categ_val.split(sep3)[0]
-        # print(f"categ_val 3 = {categ_val}")
     if sep4 in categ_val:
         categ_val = categ_val.split(sep4)[0]
-        # print(f"categ_val 4 = {categ_val}")
-    # print(f"categ, categ_val = {categ, categ_val}")
     return categ, categ_val
 
 
@@ -155,7 +147,6 @@ def decode_x_test(x_test, num_vars, categ_vars, mapping):
                 x_gui[orig_col] = 'ERROR'
             else:
                 if orig_col in ['DAYS_BIRTH', 'DAYS_EMPLOYED']:
-                    # if np.isnan(x_test[orig_col]): x_test[orig_col] = 0
                     if my_isna(x_test[orig_col]): x_test[orig_col] = 0
                     x_gui[orig_col] = DATEORIGIN + datetime.timedelta(days=x_test[orig_col])
                 else:
@@ -173,8 +164,6 @@ def decode_x_test(x_test, num_vars, categ_vars, mapping):
 
 def update_x_test(x_test, info_gui, num_vars, categ_vars, mapping):
     """Met à jour un sample avec les infos de l'IHM."""
-    # st.write(f"update_x_test : info_gui['CODE_GENDER_NR'] = {info_gui['CODE_GENDER_NR']}")
-    # st.write(f"num_vars.keys() = {num_vars.keys()}")
     for key in info_gui:
         if key in num_vars:
             if key in ['DAYS_BIRTH', 'DAYS_EMPLOYED']:
@@ -234,9 +223,7 @@ def build_client_shap_values_agg(feature_names, client_shap_values, num_vars, ca
 
 def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, client_approved, num_vars, categ_vars, mapping, x_gui):
     most_impt_crit_names = [] # TODO faire le dico et l'agglo des shap dès le début
-    ###
     client_shap_values_agg, client_shap_values_dict = build_client_shap_values_agg(criteria_names, client_shap_values, num_vars, categ_vars, mapping)
-    ###
     criteria_names_agg = list(client_shap_values_agg.keys())
     shap_values_agg = list(client_shap_values_agg.values())
     df_crit = pd.DataFrame({"Critère": criteria_names_agg,
@@ -267,7 +254,6 @@ def make_decision_criteria_graph(n_crit, client_shap_values, criteria_names, cli
     sns.barplot(data=df_crit_n, x="Importance", y="Critère", palette=colors)
     plt.title('Importance des critères de décision')
     plt.xlabel("Importance (%)")
-    # st.write(f"most_impt_crit_names = {most_impt_crit_names}")
     return fig, most_impt_crit_names
 
 
@@ -289,7 +275,6 @@ def build_radar_data(df, cols=None, label_col=None):
         cols = [col for col in df.columns if col != label_col]
 
     variables = cols
-    # st.write(cols)
     values = {}
     for ind in range(df.shape[0]):
         vals = df[cols].iloc[ind].tolist()
@@ -309,13 +294,10 @@ def make_radar_chart(df, cols=None, label_col=None, title='', title_y=1.05):
     n_vars = len(list(values.values())[0])
     label_loc = np.linspace(start=0, stop=2 * np.pi, num=n_vars)
     
-    # fig, ax1 = plt.subplots(subplot_kw=dict(polar=True))
     fig = plt.figure()
-    # plt.subplot(polar=True)
     ax = fig.add_subplot(111, projection='polar')
     for key, label in zip(values.keys(), labels):
         ax.plot(label_loc, values[key], label=label)
-    # ax.set_yticklabels([])
     plt.title(title, y=title_y)
     lines, labs = plt.thetagrids(np.degrees(label_loc), labels=variables)
     plt.legend()
@@ -334,7 +316,6 @@ def make_num_client_positioning(crit_names, crit_means, x_client):
     df_sc = pd.DataFrame(MinMaxScaler(feature_range=(0.05, 1)).fit_transform(df), columns=df.columns)
     for col in df_sc.columns: df_sc[col] = df_sc[col] * 100.
     df_sc['Who'] = ['Population', 'Client']
-    # st.write(df)
     fig = make_radar_chart(df_sc, cols=crit_names2, label_col='Who')
     return fig
 
@@ -376,9 +357,7 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
     color_lambda = 'grey'
     
     ind = 0
-    # st.write(f"crit_names = {crit_names}")
     for crit in crit_names:
-        # st.write(f"crit = {crit}")
         root_name, all_categ_cols, all_categ_vals, client_type = get_whole_categ_cols(categ_vars, mapping, x_gui, root_name=crit) # Nouvelle politique d'affichage
         if root_name is None:
             st.write(f"⚠ Critère {root_name} absent des infos disponibles !")
@@ -421,11 +400,9 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
         clrs = [color_approved if (x==client_type) else color_lambda for x in df_cat2[crit].values ]
         sns.barplot(ax=fig_ax2, data=df_cat2.iloc[:N_CAT_MAX], x='PERC_REFUSED', y=crit, palette=clrs)
         fig_ax2.set_xlabel("% de refus");
-#         fig_ax2.set_ylabel("Catégorie");
         fig_ax2.set_ylabel("");
         fig_ax2.set_title(f"Critère {root_name}");
         
-        # ind += 1
         figs.append(fig)
 
         # On mémorise que la variable catégorielle a été traitée
@@ -441,8 +418,6 @@ def get_client_info():
         return
     json_str = json.dumps(res.json())
     x_client = json.loads(json_str)
-    # st.write(x_client)
-    # return x_client
     st.session_state.x_client = x_client
     st.session_state.num_vars, st.session_state.categ_vars, st.session_state.mapping = interpret_input_df_client_vars(x_client)
     st.session_state.x_gui = decode_x_test(st.session_state.x_client, st.session_state.num_vars, st.session_state.categ_vars, st.session_state.mapping)
@@ -462,12 +437,9 @@ def get_ihm_info():
     container = st.session_state.client_container
     container.header('Etat civil')
     aa = container.number_input("Numéro de client", value=x_gui['SK_ID_CURR'], min_value=100001, max_value=456255, format="%d", help="Tel qu'indiqué dans application_{train|test}.csv") # info_gui['SK_ID_CURR']
-    # st.write(aa)
     info_gui['CODE_GENDER_NR'] = container.radio("Sexe :", ("F", "M"), index=1-x_gui['CODE_GENDER_NR'], horizontal=True)
     info_gui['DAYS_BIRTH'] = container.date_input("Date de naissance :", value=x_gui['DAYS_BIRTH'])
     info_gui['NAME_FAMILY_STATUS'] = container.selectbox("Statut matrimonial :", categ_vars['NAME_FAMILY_STATUS'], index=x_gui['NAME_FAMILY_STATUS'])
-    # info_gui['FLAG_PHONE'] = container.radio("Téléphone fixe :", ('Non', 'Oui'), index=x_gui['FLAG_PHONE'])
-    # info_gui['FLAG_MOBIL'] = container.radio("Téléphone mobile  :", ('Non', 'Oui'), index=x_gui['FLAG_MOBIL'])
 
     container.header('Informations socio-professionnelles')
     info_gui['CNT_FAM_MEMBERS_NR'] = container.number_input("Composition du foyer :", min_value=0, max_value=12, value=int(x_gui['CNT_FAM_MEMBERS_NR']), format="%d")
@@ -485,10 +457,6 @@ def get_ihm_info():
     info_gui['AMT_CREDIT'] = container.slider("Montant du prêt :", min_value=0., max_value=x_gui['AMT_CREDIT']*3, step=1000., value=x_gui['AMT_CREDIT'])
     info_gui['AMT_ANNUITY'] = container.slider("Montant annuel de remboursement :", min_value=0., max_value=x_gui['AMT_ANNUITY']*4, step=100., value=x_gui['AMT_ANNUITY']) # TODO : transformer en vraie mensualité
     info_gui['AMT_GOODS_PRICE'] = container.slider("Montant du bien :", min_value=0., max_value=x_gui['AMT_GOODS_PRICE']*2.5, step=1000., value=x_gui['AMT_GOODS_PRICE'])
-
-    # container.header('Informations précédent(s) prêt(s)')
-    # container.subheader("""(...)""")
-    # return info_gui
     st.session_state.info_gui = info_gui
     
 
@@ -503,7 +471,6 @@ def launch_prediction():
     # Encodage des infos IHM
     x_client = st.session_state.x_client
     values = {'x_client': x_client}
-    # st.write(values)
 
     res = re.get(f"{PREDICTION_API_URL}/api/prediction", json=values) # , verify=False
     if res.status_code != 200:
@@ -547,7 +514,6 @@ def launch_prediction():
                                                                  st.session_state.num_vars, st.session_state.categ_vars,
                                                                  st.session_state.mapping, st.session_state.x_gui)
         st.pyplot(fig)
-        # st.write(f"most_impt_crit_names = {most_impt_crit_names}")
         st.markdown("""---""")
 
         # Positionnement du client, variables numériques
@@ -556,7 +522,6 @@ def launch_prediction():
         most_impt_num_crit_names = [crit for crit in most_impt_crit_names if crit in st.session_state.num_vars]
         fig = make_num_client_positioning(most_impt_num_crit_names, crit_means, x_client)
         if fig is None or len(most_impt_num_crit_names)<3:
-            # st.write(f"most_impt_num_crit_names = {most_impt_num_crit_names}")
             st.write("⚠ Pas assez de critères numériques dans la décision.")
         else:
             st.pyplot(fig)
@@ -583,19 +548,12 @@ if not 'prediction' in st.session_state:
     st.title("Prêt à dépenser - tableau de bord")
     st.markdown("""---""")
     st.write("Application web prédisant le risque de défaut de paiement d'un client. L'application utilise un modèle de Machine Learning, servi par une API.")
-    # st.write("""
-    # ## About
-    # **Application web Streamlit utilisant un modèle de Machine Learning servi par une API, prédisant le risque de défaut de paiement d'un client.** 
-    # """)
     header_img = Image.open(os.path.join(IMG_PATH, "header.png"))
     st.image(header_img, caption=' ')
     st.markdown("""---""")
 
 
 # Récupération des paramètres d'affichage
-# gui_params = get_gui_params()
-
-# col1, col2 = st.columns([1, 1])
 
 # Panneau latéral
 st.sidebar.title("Informations client")
@@ -605,8 +563,6 @@ client_img = Image.open(os.path.join(IMG_PATH, "client.png"))
 st.sidebar.image(client_img, width=100)
 
 st.sidebar.button("Nouveau client", on_click=get_client_info)
-# new_client = st.sidebar.checkbox("Récup client en base")
-# keep_client = st.sidebar.checkbox("Travailler avec ce client")
 
 get_ihm_info()
 
