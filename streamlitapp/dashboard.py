@@ -477,13 +477,16 @@ def launch_prediction():
     # Encodage des infos IHM
     x_client = st.session_state.x_client
     values = {'x_client': x_client}
+    st.session_state.srv = '1'
 
     res = re.get(f"{PREDICTION_API_URL}/api/prediction", json=values) # , verify=False
     if res.status_code != 200:
         # st.write("⚠ Erreur avec serveur principal.")
         res = re.get(f"{PREDICTION_API_URL_BCK}/api/prediction", json=values)
+        st.session_state.srv = '2'
         if res.status_code != 200:
             st.write("❌ Erreur de communication de la prédiction.")
+            st.session_state.srv = '0'
             return
     json_str = json.dumps(res.json())
     resp = json.loads(json_str)
@@ -550,6 +553,7 @@ def launch_prediction():
             for fig in figs:
                 st.pyplot(fig)
         st.markdown("""---""")
+        st.write(st.session_state.srv)
 
 
 
