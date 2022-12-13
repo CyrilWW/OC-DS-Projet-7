@@ -31,6 +31,7 @@ from sklearn.preprocessing import MinMaxScaler
 # PREDICTION_API_URL = "http://192.168.1.71:5000"
 # PREDICTION_API_URL = "http://92.94.205.51:5000" # Ubuntu
 PREDICTION_API_URL = "http://52.47.209.169:5000" # EC2 
+PREDICTION_API_URL_BCK = "http://92.94.205.51:5000" # Ubuntu
 
 DATEORIGIN = datetime.datetime(2018,5,17) # Date de la compétition Kaggle
 N_CRIT = 15
@@ -416,9 +417,11 @@ def make_cat_client_positioning(crit_names, approved_cat_rates, categ_vars, mapp
 def get_client_info():
     # Récupération des infos d'un client random
     res = re.get(f"{PREDICTION_API_URL}/api/client")
-    if res.status_code != 200:
-        st.write("❌ Erreur de communication des infos clients.")
-        return
+    if res.status_code != 200: # Plan B
+        res = re.get(f"{PREDICTION_API_URL_BCK}/api/client")
+        if res.status_code != 200:
+            st.write("❌ Erreur de communication des infos clients.")
+            return
     json_str = json.dumps(res.json())
     x_client = json.loads(json_str)
     st.session_state.x_client = x_client
@@ -477,8 +480,11 @@ def launch_prediction():
 
     res = re.get(f"{PREDICTION_API_URL}/api/prediction", json=values) # , verify=False
     if res.status_code != 200:
-        st.write("❌ Erreur de communication de la prédiction.")
-        return
+        st.write("⚠ Erreur avec serveur principal.")
+        res = re.get(f"{PREDICTION_API_URL_BCK}/api/prediction", json=values)
+        if res.status_code != 200:
+            st.write("❌ Erreur de communication de la prédiction.")
+            return
     json_str = json.dumps(res.json())
     resp = json.loads(json_str)
     risk = resp['decision']['risk']
