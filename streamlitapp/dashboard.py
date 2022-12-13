@@ -480,7 +480,7 @@ def launch_prediction():
 
     res = re.get(f"{PREDICTION_API_URL}/api/prediction", json=values) # , verify=False
     if res.status_code != 200:
-        st.write("⚠ Erreur avec serveur principal.")
+        # st.write("⚠ Erreur avec serveur principal.")
         res = re.get(f"{PREDICTION_API_URL_BCK}/api/prediction", json=values)
         if res.status_code != 200:
             st.write("❌ Erreur de communication de la prédiction.")
