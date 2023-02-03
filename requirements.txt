@@ -1,0 +1,14 @@
+Flask==2.2.2
+flask-accepts==0.15.5
+Flask-Cors==3.0.8
+flask-restplus==0.13.0
+flaskerize==0.12.0
+llvmlite==0.34.0
+numba==0.51.0
+pandas==1.3.5
+pandas-datareader==0.8.1
+scikit-learn==1.0.2
+shap==0.41.0
+Shapely==1.6.4.post2
+sklearn==0.0
+xgboost==1.6.1
